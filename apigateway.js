@@ -7,8 +7,11 @@ import morgan from "morgan";
 console.log("Info log: start variables defined, in apigateway.");
 const app = express();
 const port = 3000;
-const API_URL = "http://localhost:4000";
 const _dirname = dirname(fileURLToPath(import.meta.url));
+//const API_URL = "http://localhost:4000";
+
+const API_URL = `https://eight-6-permalist-project-render-server.onrender.com`;
+console.log("API_URL:" + API_URL);
 console.log("Info log: end variables defined, in apigateway.");
 
 console.log("Info log: middleware start, in apigateway.");
