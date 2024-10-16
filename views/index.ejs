@@ -6,27 +6,29 @@
   <div class="box">
     <% for(let item of listItems){%>
     <div class="item">
-      <form action="/delete" method="post">
+      <form action="/delete" method="post" onsubmit="return confirm('Are you sure you want to delete this item?');">
         <input
           type="checkbox"
-          onchange="this.form.submit()"
+          onchange="handlerDelete()?this.form.submit(): this.checked=false"
           name="deleteItemId"
           value="<%= item.id %>"
+          alt="Field to delete an item."
         />
       </form>
 
       <p id="title<%=item.id%>"><%= item.title %></p>
 
-      <form class="edit" action="/edit" method="post">
+      <form class="edit" action="/edit" method="post" onsubmit="return confirm('Are you sure you want to save this change? All other unsaved changes will be lost.');">
         <input type="hidden" name="updatedItemId" value="<%= item.id %>" />
         <input
-          id="input<%=item.id%>"
+          id="input<%=item.id%>" pattern="^[a-zA-Z0-9][a-zA-Z0-9 .,]*[a-zA-Z0-9.,]$"
+          required
           type="text"
           name="updatedItemTitle"
           value="<%= item.title %>"
           autocomplete="off"
-          autofocus="true"
-          hidden="true"
+          autofocus="true" alt="Field to edit an item."
+          hidden="true" maxlength="255"  title="First character must be alphanumeric; subsequent characters can be alphanumeric, space, period, or comma; last character must be alphanumeric, comma, or period."
         />
         <button id="done<%=item.id%>" class="edit" type="submit" hidden>
           <img
@@ -35,6 +37,7 @@
             alt="tick image"
           />
         </button>
+        <input id="cancel<%=item.id%>" type="button" value="Cancel" onclick="handlerCancel('<%=item.id%>')" hidden/>
       </form>
       <button
         id="edit<%=item.id%>"
@@ -52,24 +55,40 @@
 
     <form class="item" action="/add" method="post">
       <input
-        type="text"
+        type="text" alt="Field to add an item."
+        required
         name="newItem"
         placeholder="New Item"
         autocomplete="off"
         autofocus="true"
-        maxlength="10"
+        maxlength="255"
+        pattern="^[a-zA-Z0-9][a-zA-Z0-9 .,]*[a-zA-Z0-9.,]$"  title="First character must be alphanumeric; subsequent characters can be alphanumeric, space, period, or comma; last character must be alphanumeric, comma, or period."
       />
       <button class="add" type="submit" name="list" value="">+</button>
+      Items can contain 1-255 characters, including alpha-numeric, space,
+      fullstop, comma.
     </form>
-    <p class="error"><% if (locals.error) {%><%= error%><%}%>test</p>
+    <% if (locals.error) {%><p class="error"></p><%= error%>test</p><%}%>
   </div>
 </div>
 <script>
   function handler(id) {
     document.getElementById("title" + id).setAttribute("hidden", true);
     document.getElementById("edit" + id).setAttribute("hidden", true);
+    document.getElementById("cancel" + id).removeAttribute("hidden");
     document.getElementById("done" + id).removeAttribute("hidden");
     document.getElementById("input" + id).removeAttribute("hidden");
+  }
+  function handlerCancel(id) {
+    document.getElementById("title" + id).removeAttribute("hidden");
+    document.getElementById("edit" + id).removeAttribute("hidden");
+    document.getElementById("cancel" + id).setAttribute("hidden", true);
+    document.getElementById("done" + id).setAttribute("hidden", true);
+    document.getElementById("input" + id).setAttribute("hidden", true);
+  }
+  function handlerDelete() {
+    let result= confirm('Are you sure you want to delete this item?');
+    return(result);
   }
 </script>
 <div>
@@ -94,6 +113,7 @@
         <input type="hidden" name="updatedItemId" value="<%= item.id %>" />
         <input
           id="input<%=item.id%>"
+          required
           type="text"
           name="updatedItemTitle"
           value="<%= item.title %>"
@@ -127,6 +147,7 @@
     <form class="item" action="/add" method="post">
       <input
         type="text"
+        required
         name="newItem"
         placeholder="New Item"
         autocomplete="off"
