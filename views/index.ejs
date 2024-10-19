@@ -6,7 +6,7 @@
   <div class="box">
     <% for(let item of listItems){%>
     <div class="item">
-      <form action="/delete" method="post" onsubmit="return confirm('Are you sure you want to delete this item?');">
+      <form action="/deleteItem" method="post" onsubmit="return confirm('Are you sure you want to delete this item?');">
         <input
           type="checkbox"
           onchange="handlerDelete()?this.form.submit(): this.checked=false"
@@ -18,7 +18,7 @@
 
       <p id="title<%=item.id%>"><%= item.title %></p>
 
-      <form class="edit" action="/edit" method="post" onsubmit="return confirm('Are you sure you want to save this change? All other unsaved changes will be lost.');">
+      <form class="edit" action="/editItem" method="post" onsubmit="return confirm('Are you sure you want to save this change? All other unsaved changes will be lost.');">
         <input type="hidden" name="updatedItemId" value="<%= item.id %>" />
         <input
           id="input<%=item.id%>" pattern="^[a-zA-Z0-9][a-zA-Z0-9 .,]*[a-zA-Z0-9.,]$"
@@ -53,7 +53,7 @@
     </div>
     <% } %>
 
-    <form class="item" action="/add" method="post">
+    <form class="item" action="/addItem" method="post">
       <input
         type="text" alt="Field to add an item."
         required
@@ -72,6 +72,9 @@
   </div>
 </div>
 <script>
+ 
+ window.history.pushState(null,null, "/");
+
   function handler(id) {
     document.getElementById("title" + id).setAttribute("hidden", true);
     document.getElementById("edit" + id).setAttribute("hidden", true);
