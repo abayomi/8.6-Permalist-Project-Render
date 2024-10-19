@@ -58,6 +58,20 @@ app.get("/", async (req, res, next) => {
   debugInfo("Info log: app.get / func end, in apigateway.");
 });
 
+/*Adding an item to a to do list.*/
+// app.post("/addItem", async (req, res, next) => {
+//   debugInfo("Info log: app.post /add func start, in apigateway.");
+//   const item = req.body.newItem;
+//   try {
+//     const response = await axios.post(`${API_URL}/addItem`, req.body);
+//     await createToDoList(req, res, response.data.error);
+//   } catch (error) {
+//     debugInfo(`Error log: failed happened at: axios(${API_URL}/add)`);
+//     sendErrorFile(res);
+//   }
+//   debugInfo("Info log: app.post /add func end, in apigateway.");
+// });
+
 app.post(
   "/addItem",
   tryCatch(async (req, res, next) => {
