@@ -12,10 +12,8 @@ function tryCatch(controller) {
       //   throw err;
       await controller(req, res, next);
     } catch (error) {
-      console.log("in error trycatch");
-      debugError(req.messageInEventOfErrorDuringExecution);
+      debugError(req.messageInEventOfErrorDuringExecutionOfAxios);
       next(error); //will call global error handling middleware
-      //sendErrorFile(res);
     } finally {
       debugInfo("Info log: End of tryCatch(controller).");
     }
@@ -35,4 +33,20 @@ function tryCatch(controller) {
 //   }
 // };
 
-export { tryCatch };
+function checkIsNotUndefined(
+  arrayOfItemsThatCannotBeUndefined,
+  messageIfDataIsUndefined,
+  next
+) {
+  for (let item of arrayOfItemsThatCannotBeUndefined) {
+    if (item == undefined) {
+      debugError(messageIfDataIsUndefined);
+      const error = new CustomError(messageIfDataIsUndefined, 404);
+      next(error);
+      return false;
+    }
+  }
+  return true;
+}
+
+export { tryCatch, checkIsNotUndefined };

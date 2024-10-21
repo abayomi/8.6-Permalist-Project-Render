@@ -7,7 +7,10 @@ import Debug from "debug";
 import CustomError from "./utils/CustomError.js";
 import globalErrorHandlingMiddlewareController from "./controllers/errorController.js";
 import { sendErrorFile } from "./utils/errorFile.js";
-import { tryCatch } from "./utils/tryCatch.js";
+import {
+  tryCatch,
+  checkIsNotUndefined,
+} from "./utils/tryCatch-checkUndefined.js";
 
 const debugInfo = Debug("apigateway-info-logs");
 const debugError = Debug("apigateway-error-logs");
@@ -17,9 +20,6 @@ const port = 3000;
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const API_URL = "http://localhost:4000";
 //const API_URL = `https://eight-6-permalist-project-render-server.onrender.com`;
-
-//const debug = debuglog("app");
-debugInfo("API_URL:" + API_URL);
 debugInfo("Info log: end variables defined, in apigateway.");
 
 debugInfo("Info log: middleware start, in apigateway.");
@@ -32,85 +32,89 @@ debugInfo("Info log: middleware end, in apigateway.");
 /*calls API to get list of to do list items*/
 async function createToDoList(req, res, error) {
   debugInfo("Info log: createToDoList start, in apigateway.");
-  try {
-    const response = await axios.get(`${API_URL}/items`);
-    const objToReturn = {
-      listTitle: response.data.listTitle,
-      listItems: response.data.listItems,
-    };
-    if (error != undefined) objToReturn.error = error;
-    res.render(_dirname + "/views/index.ejs", objToReturn);
-  } catch (error) {
-    debugError(`Error log: failed happened at: axios(${API_URL}/items)`);
-    //res.status(500).json({ message: "Error fetching items, in apigateway" });
-    sendErrorFile(
-      res,
-      `Error log: failed happened at: axios(${API_URL}/items) in api gateway.`
-    );
-  }
+
+  const response = await axios.get(`${API_URL}/items`);
+  const objToReturn = {
+    listTitle: response.data.listTitle,
+    listItems: response.data.listItems,
+  };
+  if (error != undefined) objToReturn.error = error;
+  res.render(_dirname + "/views/index.ejs", objToReturn);
+
   debugInfo("Info log: createToDoList end, in apigateway.");
 }
 
 /*Base URL endpoint handled.*/
-app.get("/", async (req, res, next) => {
-  debugInfo("Info log: app.get / func start, in apigateway.");
-  await createToDoList(req, res, undefined);
-  debugInfo("Info log: app.get / func end, in apigateway.");
-});
+app.get(
+  "/",
+  tryCatch(async (req, res, next) => {
+    debugInfo("Info log: app.get / func start, in apigateway.");
+    await createToDoList(req, res, undefined);
+    debugInfo("Info log: app.get / func end, in apigateway.");
+  })
+);
 
-/*Adding an item to a to do list.*/
-// app.post("/addItem", async (req, res, next) => {
-//   debugInfo("Info log: app.post /add func start, in apigateway.");
-//   const item = req.body.newItem;
-//   try {
-//     const response = await axios.post(`${API_URL}/addItem`, req.body);
-//     await createToDoList(req, res, response.data.error);
-//   } catch (error) {
-//     debugInfo(`Error log: failed happened at: axios(${API_URL}/add)`);
-//     sendErrorFile(res);
-//   }
-//   debugInfo("Info log: app.post /add func end, in apigateway.");
-// });
-
+/*Adding an item on a to do list. First it is determined whether any of the necessary form data is undefined and if it is all defined then the api call to make the update is made in the try block.*/
 app.post(
   "/addItem",
   tryCatch(async (req, res, next) => {
     debugInfo("Info log: app.post /add func start, in apigateway.");
-    req.messageInEventOfErrorDuringExecution = `Error log: failed happened at: axios(${API_URL}/add)`;
-    const item = req.body.newItem;
-    const response = await axios.post(`${API_URL}/addItem`, req.body);
-    await createToDoList(req, res, response.data.error);
+    req.messageInEventOfErrorDuringExecutionOfAxios = `Error log: failed happened at: axios(${API_URL}/addItem)`;
+    let messageIfDataIsUndefined = `All the data needed to add the item was not entered, so the item could not be added.`;
+    const isNotUndefined = checkIsNotUndefined(
+      [req.body.newItem],
+      messageIfDataIsUndefined,
+      next
+    );
+    if (isNotUndefined) {
+      const response = await axios.post(`${API_URL}/addItem`, req.body);
+      await createToDoList(req, res, response.data.error);
+    }
     debugInfo("Info log: app.post /add func end, in apigateway.");
   })
 );
 
-/*Updating an item on a to do list.*/
-app.post("/editItem", async (req, res, next) => {
-  debugInfo("Info log: app.post /edit func start, in apigateway.");
-  try {
-    const response = await axios.patch(`${API_URL}/editItem`, req.body);
-    await createToDoList(req, res, response.data.error);
-  } catch (error) {
-    debugError(`Error log: failed happened at: axios(${API_URL}/edit)`);
-    sendErrorFile(res);
-  }
-  debugInfo("Info log: app.post /edit func end, in apigateway.");
-});
+/*Updating an item on a to do list. First it is determined whether any of the necessary form data is undefined and if it is all defined then the api call to make the update is made in the try block.*/
+app.post(
+  "/editItem",
+  tryCatch(async (req, res, next) => {
+    debugInfo("Info log: app.post /edit func start, in apigateway.");
+    req.messageInEventOfErrorDuringExecution = `Error log: failed happened at: axios(${API_URL}/editItem)`;
+    let messageIfDataIsUndefined = `All the data needed to edit the item was not entered, so the item could not be edited.`;
+    const isNotUndefined = checkIsNotUndefined(
+      [req.body.updatedItemId, req.body.updatedItemTitle],
+      messageIfDataIsUndefined,
+      next
+    );
+    if (isNotUndefined) {
+      const response = await axios.patch(`${API_URL}/editItem`, req.body);
+      await createToDoList(req, res, response.data.error);
+    }
+    debugInfo("Info log: app.post /edit func end, in apigateway.");
+  })
+);
 
-/*Deleting an item on a to do list.*/
-app.post("/deleteItem", async (req, res, next) => {
-  debugInfo("Info log: app.post /delete func start, in apigateway.");
-  try {
-    const response = await axios.delete(`${API_URL}/deleteItem`, {
-      data: { deleteItemId: req.body.deleteItemId },
-    });
-    await createToDoList(req, res, response.data.error);
-  } catch (error) {
-    debugError(`Error log: failed happened at: axios(${API_URL}/delete)`);
-    sendErrorFile(res);
-  }
-  debugInfo("Info log: app.post /delete func end, in apigateway.");
-});
+/*Deleting an item on a to do list. First it is determined whether any of the necessary form data is undefined and if it is all defined then the api call to make the update is made in the try block.*/
+app.post(
+  "/deleteItem",
+  tryCatch(async (req, res, next) => {
+    debugInfo("Info log: app.post /delete func start, in apigateway.");
+    req.messageInEventOfErrorDuringExecution = `Error log: failed happened at: axios(${API_URL}/deleteItem)`;
+    let messageIfDataIsUndefined = `All the data needed to delete the item was not entered, so the item could not be deleted.`;
+    const isNotUndefined = checkIsNotUndefined(
+      [req.body.deleteItemId],
+      messageIfDataIsUndefined,
+      next
+    );
+    if (isNotUndefined) {
+      const response = await axios.delete(`${API_URL}/deleteItem`, {
+        data: { deleteItemId: req.body.deleteItemId },
+      });
+      await createToDoList(req, res, response.data.error);
+    }
+    debugInfo("Info log: app.post /delete func end, in apigateway.");
+  })
+);
 
 /*Handling all endpoint requests that are invalid.*/
 app.all("*", async (req, res, next) => {
@@ -146,3 +150,18 @@ app.listen(port, () => {
   debugInfo(`API Gateway listening on port ${port}, in apigateway`);
 });
 debugInfo("Info log: app.listen end, in apigateway");
+
+/*This is called if an async function has an unhandled promise rejection. If this was not here, then the rejected promise would eventually be caught by the uncaughtException below.*/
+process.on("unhandledRejection", (error) => {
+  const err = new CustomError("Something went really wrong", 404);
+  //to do: send out email and restart processes automatically https://www.youtube.com/watch?v=vAH4GRWbAQw
+  next(err);
+});
+
+/*Catches exceptions that were not handled in the code. So this is the last place for the node process to catch the error and gracefully handle it.*/
+process.on("uncaughtException", (error) => {
+  const err = new CustomError("Something went really wrong", 404);
+  //to do: send out email and restart processes automatically https://www.youtube.com/watch?v=vAH4GRWbAQw
+  //do some checks to determine status of services and database
+  next(err);
+});
