@@ -8,10 +8,11 @@ import CustomError from "./utils/CustomError.js";
 import globalErrorHandlingMiddlewareController from "./controllers/errorController.js";
 import { sendErrorFile } from "./utils/errorFile.js";
 import {
-  tryCatch,
+  tryCatchAsyncController,
   checkIsNotUndefined,
 } from "./utils/tryCatch-checkUndefined.js";
 
+let apigateway;
 const debugInfo = Debug("apigateway-info-logs");
 const debugError = Debug("apigateway-error-logs");
 debugInfo("Info log: start variables defined, in apigateway.");
@@ -29,25 +30,79 @@ app.use(express.json());
 app.use(morgan("combined"));
 debugInfo("Info log: middleware end, in apigateway.");
 
-/*calls API to get list of to do list items*/
+/*calls API to get list of to do list items
+@params error: if error is undefined that means error contains a string that says that an error occurred during adding, updating or deleting an item. It means we can still use this createToDoList method to retrieve all the values in the database and create a list for the user. we will pass along this error to the ui as well, so the user knows that the last opreation failed.
+*/
 async function createToDoList(req, res, error) {
   debugInfo("Info log: createToDoList start, in apigateway.");
-
   const response = await axios.get(`${API_URL}/items`);
-  const objToReturn = {
-    listTitle: response.data.listTitle,
-    listItems: response.data.listItems,
-  };
-  if (error != undefined) objToReturn.error = error;
-  res.render(_dirname + "/views/index.ejs", objToReturn);
-
+  debugInfo(
+    "Info log: axios request completed, createToDoList, in apigateway."
+  );
+  if (response.data.error == undefined) {
+    debugInfo(
+      "Info log: Check if there was an error when retrieving all items via axios and if not, show the user the regular page, but if there was an error, then show the user the error page, createToDoList, in apigateway."
+    );
+    const objToReturn = {
+      listTitle: response.data.listTitle,
+      listItems: response.data.listItems,
+    };
+    debugInfo("Info log: objToReturn created, createToDoList, in apigateway.");
+    if (error != undefined) {
+      debugInfo(
+        "Info log: There was an error while doing a create, update or delete operation, prior to the axios get in this function. This error is passed along to the ui, createToDoList, in apigateway."
+      );
+      objToReturn.error = error;
+      debugInfo(
+        "Info log: error added to objToReturn, createToDoList, in apigateway."
+      );
+    }
+    res.render(_dirname + "/views/index.ejs", objToReturn);
+  } else {
+    debugInfo(
+      "Info log: There was an error in retrieving all that data via axios, createToDoList, in apigateway."
+    );
+    res.render(_dirname + "/views/error.ejs", { error: response.data.error });
+  }
   debugInfo("Info log: createToDoList end, in apigateway.");
 }
+
+/*Catches exceptions that were not handled in the code. So this is the last place for the node process to catch the error and gracefully handle it.
+This is near the top of the js file as we want it to be run before the code below it is run, so that it can catch any uncaught exceptiosn that happend below it. If this code is at the bottom of this js file, it will be run after the rest of code in this file, so if the code above it throws an uncaght exception then this code wont catch the uncaught exception as it is run after the uncaught exception.
+So any exception to caught by express will be handled here.  
+*/
+await process.on("uncaughtException", async (error) => {
+  debugError(
+    "Error log: uncaughtException: " +
+      error.name +
+      ": " +
+      error.message +
+      " : " +
+      error.stack
+  );
+  //to do: send out email and restart processes automatically https://www.youtube.com/watch?v=vAH4GRWbAQw
+  //to do: do some checks to determine status of services and database
+  debugInfo("uncaughtException.");
+  if (apigateway != undefined) {
+    await apigateway.close(async () => {
+      debugInfo(
+        "uncaughtException. Express server closed. Node process now closing."
+      );
+      debugInfo("uncaughtException. Exiting process.");
+      process.exit(1);
+    }); // give server time to close first and then the callback to exit the node process is called. since the process has exited, if a user makes a request to the system, he will not get a response.
+  }
+});
+
+//throw new Error("testing uncaught exception");
+// const p = new Promise((_, reject) => {
+//   reject(new Error("This is a test unhandled rejection!"));
+// });
 
 /*Base URL endpoint handled.*/
 app.get(
   "/",
-  tryCatch(async (req, res, next) => {
+  tryCatchAsyncController(async (req, res, next) => {
     debugInfo("Info log: app.get / func start, in apigateway.");
     await createToDoList(req, res, undefined);
     debugInfo("Info log: app.get / func end, in apigateway.");
@@ -57,7 +112,7 @@ app.get(
 /*Adding an item on a to do list. First it is determined whether any of the necessary form data is undefined and if it is all defined then the api call to make the update is made in the try block.*/
 app.post(
   "/addItem",
-  tryCatch(async (req, res, next) => {
+  tryCatchAsyncController(async (req, res, next) => {
     debugInfo("Info log: app.post /add func start, in apigateway.");
     req.messageInEventOfErrorDuringExecutionOfAxios = `Error log: failed happened at: axios(${API_URL}/addItem)`;
     let messageIfDataIsUndefined = `All the data needed to add the item was not entered, so the item could not be added.`;
@@ -77,7 +132,7 @@ app.post(
 /*Updating an item on a to do list. First it is determined whether any of the necessary form data is undefined and if it is all defined then the api call to make the update is made in the try block.*/
 app.post(
   "/editItem",
-  tryCatch(async (req, res, next) => {
+  tryCatchAsyncController(async (req, res, next) => {
     debugInfo("Info log: app.post /edit func start, in apigateway.");
     req.messageInEventOfErrorDuringExecution = `Error log: failed happened at: axios(${API_URL}/editItem)`;
     let messageIfDataIsUndefined = `All the data needed to edit the item was not entered, so the item could not be edited.`;
@@ -97,7 +152,7 @@ app.post(
 /*Deleting an item on a to do list. First it is determined whether any of the necessary form data is undefined and if it is all defined then the api call to make the update is made in the try block.*/
 app.post(
   "/deleteItem",
-  tryCatch(async (req, res, next) => {
+  tryCatchAsyncController(async (req, res, next) => {
     debugInfo("Info log: app.post /delete func start, in apigateway.");
     req.messageInEventOfErrorDuringExecution = `Error log: failed happened at: axios(${API_URL}/deleteItem)`;
     let messageIfDataIsUndefined = `All the data needed to delete the item was not entered, so the item could not be deleted.`;
@@ -144,24 +199,48 @@ app.all("*", async (req, res, next) => {
 /*Global error handling middleware.*/
 app.use(globalErrorHandlingMiddlewareController);
 
+/*If the nodejs process is terminated maully, this code will execute and can be used to do any action that need to be done b4 the node process ends, so that it gracefully shuts down the node process.*/
+await process.on("SIGINT", async () => {
+  debugInfo("Info log: SIGINT: ");
+  //to do: send out email and restart processes automatically https://www.youtube.com/watch?v=vAH4GRWbAQw
+  //to do: do some checks to determine status of services and database
+  debugInfo("SIGINT.");
+  if (apigateway != undefined) {
+    await apigateway.close(async () => {
+      debugInfo("SIGINT. Express server closed. Node process now closing.");
+      debugInfo("SIGINT. Exiting process.");
+      process.exit(0);
+    }); // give server time to close first and then the callback to exit the node process is called. since the process has exited, if a user makes a request to the system, he will not get a response.
+  }
+});
+
+/*This is called if an async function has an unhandled promise rejection. If this was not here, then the rejected promise would eventually be caught by the uncaughtException process.on.*/
+await process.on("unhandledRejection", async (error) => {
+  debugError(
+    "Error log: unhandledRejection: " +
+      error.name +
+      ": " +
+      error.message +
+      " : " +
+      error.stack
+  );
+  //to do: send out email and restart processes automatically https://www.youtube.com/watch?v=vAH4GRWbAQw
+  //to do: do some checks to determine status of services and database
+  debugInfo("unhandledRejection.");
+  if (apigateway != undefined) {
+    await apigateway.close(async () => {
+      debugInfo(
+        "unhandledRejection. Express server closed. Node process now closing."
+      );
+      debugInfo("unhandledRejection. Exiting process.");
+      process.exit(1);
+    }); // give server time to close first and then the callback to exit the node process is called. since the process has exited, if a user makes a request to the system, he will not get a response.
+  }
+});
+
 /*Listening on port.*/
 debugInfo("Info log: app.listen start, in apigateway");
-app.listen(port, () => {
+apigateway = app.listen(port, () => {
   debugInfo(`API Gateway listening on port ${port}, in apigateway`);
 });
 debugInfo("Info log: app.listen end, in apigateway");
-
-/*This is called if an async function has an unhandled promise rejection. If this was not here, then the rejected promise would eventually be caught by the uncaughtException below.*/
-process.on("unhandledRejection", (error) => {
-  const err = new CustomError("Something went really wrong", 404);
-  //to do: send out email and restart processes automatically https://www.youtube.com/watch?v=vAH4GRWbAQw
-  next(err);
-});
-
-/*Catches exceptions that were not handled in the code. So this is the last place for the node process to catch the error and gracefully handle it.*/
-process.on("uncaughtException", (error) => {
-  const err = new CustomError("Something went really wrong", 404);
-  //to do: send out email and restart processes automatically https://www.youtube.com/watch?v=vAH4GRWbAQw
-  //do some checks to determine status of services and database
-  next(err);
-});

@@ -4,7 +4,7 @@ const debugInfo = Debug("tryCatch-info-logs");
 const debugError = Debug("tryCatch-error-logs");
 
 /*take a function as an input, call it controller and return an aync function that wraps the input function in a try catch block. */
-function tryCatch(controller) {
+function tryCatchAsyncController(controller) {
   return async (req, res, next) => {
     debugInfo("Info log: Start of tryCatch(controller).");
     try {
@@ -49,4 +49,4 @@ function checkIsNotUndefined(
   return true;
 }
 
-export { tryCatch, checkIsNotUndefined };
+export { tryCatchAsyncController, checkIsNotUndefined };
