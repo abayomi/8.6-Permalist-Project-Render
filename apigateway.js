@@ -35,7 +35,7 @@ debugInfo("Info log: middleware end, in apigateway.");
 */
 async function createToDoList(req, res, error) {
   debugInfo("Info log: createToDoList start, in apigateway.");
-  const response = await axios.get(`${API_URL}/items`);
+  const response = await axios.get(`${API_URL}/api/v1/items`);
   debugInfo(
     "Info log: axios request completed, createToDoList, in apigateway."
   );
@@ -114,7 +114,7 @@ app.post(
   "/addItem",
   tryCatchAsyncController(async (req, res, next) => {
     debugInfo("Info log: app.post /add func start, in apigateway.");
-    req.messageInEventOfErrorDuringExecutionOfAxios = `Error log: failed happened at: axios(${API_URL}/addItem)`;
+    req.messageInEventOfErrorDuringExecutionOfAxios = `Error log: failed happened at: axios(${API_URL}/api/v1/items/add)`;
     let messageIfDataIsUndefined = `All the data needed to add the item was not entered, so the item could not be added.`;
     const isNotUndefined = checkIsNotUndefined(
       [req.body.newItem],
@@ -122,7 +122,10 @@ app.post(
       next
     );
     if (isNotUndefined) {
-      const response = await axios.post(`${API_URL}/addItem`, req.body);
+      const response = await axios.post(
+        `${API_URL}/api/v1/items/add`,
+        req.body
+      );
       await createToDoList(req, res, response.data.error);
     }
     debugInfo("Info log: app.post /add func end, in apigateway.");
@@ -134,7 +137,7 @@ app.post(
   "/editItem",
   tryCatchAsyncController(async (req, res, next) => {
     debugInfo("Info log: app.post /edit func start, in apigateway.");
-    req.messageInEventOfErrorDuringExecution = `Error log: failed happened at: axios(${API_URL}/editItem)`;
+    req.messageInEventOfErrorDuringExecution = `Error log: failed happened at: axios(${API_URL}/api/v1/items/edit)`;
     let messageIfDataIsUndefined = `All the data needed to edit the item was not entered, so the item could not be edited.`;
     const isNotUndefined = checkIsNotUndefined(
       [req.body.updatedItemId, req.body.updatedItemTitle],
@@ -142,7 +145,10 @@ app.post(
       next
     );
     if (isNotUndefined) {
-      const response = await axios.patch(`${API_URL}/editItem`, req.body);
+      const response = await axios.patch(
+        `${API_URL}/api/v1/items/edit`,
+        req.body
+      );
       await createToDoList(req, res, response.data.error);
     }
     debugInfo("Info log: app.post /edit func end, in apigateway.");
@@ -154,7 +160,7 @@ app.post(
   "/deleteItem",
   tryCatchAsyncController(async (req, res, next) => {
     debugInfo("Info log: app.post /delete func start, in apigateway.");
-    req.messageInEventOfErrorDuringExecution = `Error log: failed happened at: axios(${API_URL}/deleteItem)`;
+    req.messageInEventOfErrorDuringExecution = `Error log: failed happened at: axios(${API_URL}/api/v1/items/delete)`;
     let messageIfDataIsUndefined = `All the data needed to delete the item was not entered, so the item could not be deleted.`;
     const isNotUndefined = checkIsNotUndefined(
       [req.body.deleteItemId],
@@ -162,7 +168,7 @@ app.post(
       next
     );
     if (isNotUndefined) {
-      const response = await axios.delete(`${API_URL}/deleteItem`, {
+      const response = await axios.delete(`${API_URL}/api/v1/items/delete`, {
         data: { deleteItemId: req.body.deleteItemId },
       });
       await createToDoList(req, res, response.data.error);
