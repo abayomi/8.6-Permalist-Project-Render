@@ -11,7 +11,7 @@ import {
   tryCatchAsyncController,
   checkIsNotUndefined,
 } from "./utils/tryCatch-checkUndefined.js";
-
+console.log("f");
 let apigateway;
 const debugInfo = Debug("apigateway-info-logs");
 const debugError = Debug("apigateway-error-logs");
