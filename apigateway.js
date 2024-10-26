@@ -11,7 +11,7 @@ import {
   tryCatchAsyncController,
   checkIsNotUndefined,
 } from "./utils/tryCatch-checkUndefined.js";
-console.log("f");
+// command to run this file: $env:DEBUG="apigateway-info-logs,apigateway-error-logs,errorController-info-logs,errorController-error-logs,errorFile-info-logs,errorFile-error-logs, tryCatch-error-logs,tryCatch-info-logs"; node .\apigateway.js
 let apigateway;
 const debugInfo = Debug("apigateway-info-logs");
 const debugError = Debug("apigateway-error-logs");

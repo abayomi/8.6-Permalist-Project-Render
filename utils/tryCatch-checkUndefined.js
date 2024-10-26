@@ -12,7 +12,15 @@ function tryCatchAsyncController(controller) {
       //   throw err;
       await controller(req, res, next);
     } catch (error) {
-      debugError(req.messageInEventOfErrorDuringExecutionOfAxios);
+      debugError(
+        req.messageInEventOfErrorDuringExecutionOfAxios +
+          ". error:name: " +
+          error.name +
+          ". error:message: " +
+          error.message +
+          ". error.stack: " +
+          error.stack
+      );
       next(error); //will call global error handling middleware
     } finally {
       debugInfo("Info log: End of tryCatch(controller).");
