@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node apigateway.js"
+    "start": "node apigateway.js",
+    "start_with_logs": "cross-env DEBUG=apigateway-info-logs,apigateway-error-logs,errorController-info-logs,errorController-error-logs,errorFile-info-logs,errorFile-error-logs,tryCatch-error-logs,tryCatch-info-logs node ./apigateway.js",
+    "start_without_logs": "node ./apigateway.js"
   },
   "keywords": [],
   "author": "",
@@ -19,5 +21,12 @@
     "morgan": "^1.10.0",
     "path": "^0.12.7",
     "url": "^0.11.4"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  },
+  "devDependenciesComments": {
+    "cross-env": "cross-env is used so that I can set the env variable DEBUG, on all platforms like winodws, mac, ubuntu using the same script above. To install cross-env the command that was used was 'npm install cross-env --save-dev'. When deployigb to production, the command to use is npm 'install --production'. To install only dev dependencies use the command 'npm install --only=dev'.",
+    "powershell": "The powershell command I run to produce logs (but in order to paste it here i have to escape 3 characters, i dont have to escape them in powershell.) is: $env:DEBUG=\"apigateway-info-logs,apigateway-error-logs,errorController-info-logs,errorController-error-logs,errorFile-info-logs,errorFile-error-logs, tryCatch-error-logs,tryCatch-info-logs\"; node .\\apigateway.js "
   }
 }

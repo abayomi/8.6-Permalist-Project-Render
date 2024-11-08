@@ -15,7 +15,6 @@ debugInfo("Info log: start variables defined, in apigateway.");
 const app = express();
 const port = 3000;
 const _dirname = dirname(fileURLToPath(import.meta.url));
-const API_URL = "http://localhost:4000";
 //const API_URL = `https://eight-6-permalist-project-render-server.onrender.com`;
 debugInfo("Info log: end variables defined, in apigateway.");
 
